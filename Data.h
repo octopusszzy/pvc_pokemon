@@ -16,4 +16,6 @@ public:
 	static char SkillName[SkillDataRange][SkillNameLength];
 
 	static char ItemName[ItemRange][ItemNameLength];
+
+	static char AbilityName[AbilityRange][AbilityNameLength];
 };

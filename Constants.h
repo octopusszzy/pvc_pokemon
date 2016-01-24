@@ -14,4 +14,7 @@
 #define ItemNameLength 20
 #define ItemRange 50
 
+#define AbilityNameLength 20
+#define AbilityRange 38
+
 #define TimeLimit 0.25*CLOCKS_PER_SEC

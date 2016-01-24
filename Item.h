@@ -13,7 +13,7 @@ enum Item{
 	ApicotBerry,
 	AspearBerry,
 	AssaultVest,
-	Audinite,
+	
 	BabiriBerry,
 	BerryJuice,
 	BigRoot,
@@ -48,6 +48,7 @@ enum Item{
 	Alakazite,
 	Altarianite,
 	Ampharosite,
+	Audinite,
 	Banettite,
 	Beedrillite,
 	Blastoisinite,

@@ -1,3 +1,42 @@
 #pragma once
 
-enum Ability{ Disabled };
+enum Ability{ 
+	Disabled,
+	Stench,//恶臭
+	Drizzle,//降雨
+	SpeedBoost,//加速
+	BattleArmor,//战斗盔甲
+	Sturdy,//坚硬
+	Damp,//湿气,阻止自爆类技能
+	Limber,//柔软
+	SandVeil,//沙隐
+	Static,//静电
+	VoltAbsorb,//蓄电
+	WaterAbsorb,//蓄水
+	Oblivious,//迟钝
+	CloudNine,//无天气
+	Compoundeyes,//复眼
+	Insomnia,//失眠
+	ColorChange,//变色
+	Immunity,//免疫
+	FlashFire,//引火
+	ShieldDust,//鳞粉，不受对方技能追加效果影响
+	OwnTempo,//我行我素，不会混乱
+	SuctionCups,//吸盘，阻止吹吼龙尾特效
+	Intimidate,//威吓
+	ShadowTag,//踩影
+	RoughSkin,//鲨鱼皮
+	WonderGuard,//奇异守护
+	Levitate,//浮游
+	EffectSpore,//孢子
+	Synchronize,//同步率
+	ClearBody,//净体
+	NaturalCure,//自然回复
+	Lightningrod,//避雷针
+	SereneGrace,//天恩
+	SwiftSwim,//轻快
+	Chlorophyll,//叶绿素
+	Illuminate,//发光
+	Trace,//追踪
+	HugePower//大力士
+};

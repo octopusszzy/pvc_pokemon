@@ -51,7 +51,8 @@ int Team::generateLegalMove(int *moves, Team* rivalTeam)
 			}
 		}
 	}
-	if (bind == 0)
+	if (bind == 0 && !(rivalTeam->pokemons[0] && rivalTeam->pokemons[0]->life > 0 && rivalTeam->pokemons[0]->ability == ShadowTag 
+		&& pokemons[0]->type[0] != Ghost && pokemons[0]->type[1] != Ghost))
 	{
 		for (int i = 1; i < 6; ++i)
 		{
@@ -135,6 +136,7 @@ void Game::aiMoveMonteCarlo(int &move0, int &move1)
 			Game *tmpGame = new Game(tmpTeam0, tmpTeam1);
 			tmpGame->weather = weather;
 			tmpGame->weatherCnt = weatherCnt;
+			tmpGame->round = round;
 
 			int pos = rand() % (legalMovesCnt0*legalMovesCnt1);
 			tmpGame->Round(nodes[pos]->selfMove, nodes[pos]->rivalMove, false);
@@ -202,6 +204,25 @@ void Game::aiMoveMonteCarlo(int &move0, int &move1)
 			sign1 = i;
 	}
 	
+	/*printf("%s: ", teams[0]->pokemons[0]->nickname);
+	for (int i = 0; i < legalMovesCnt0; ++i)
+	{
+		printf("%d ",resultWin0[i]);
+	}printf("\n%s: ", teams[0]->pokemons[0]->nickname);
+	for (int i = 0; i < legalMovesCnt0; ++i)
+	{
+		printf("%d ", resultTotal0[i]);
+	}printf("\n");
+	printf("%s: ", teams[1]->pokemons[0]->nickname);
+	for (int i = 0; i < legalMovesCnt1; ++i)
+	{
+		printf("%d ", resultWin1[i]);
+	}printf("\n%s: ", teams[1]->pokemons[0]->nickname);
+	for (int i = 0; i < legalMovesCnt1; ++i)
+	{
+		printf("%d ", resultTotal1[i]);
+	}printf("\n");*/
+
 	move0 = legalMoves0[sign0];
 	move1 = legalMoves1[sign1];
 	for (int i = 0; i < legalMovesCnt0*legalMovesCnt1; ++i)

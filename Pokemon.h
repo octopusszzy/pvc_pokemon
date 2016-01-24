@@ -28,6 +28,7 @@ private:
 	Item item;
 	int happiness;
 	Ability ability;
+	Ability copiedAbility;
 
 	int EVs[6];//努力值
 	int IVs[6];//个体值
@@ -39,11 +40,15 @@ private:
 	Skill *skills[5];
 	bool substitute;
 	State state;
+	int sleepCnt;
 	bool confused;
 	bool charmed;
 	bool seed;
 	bool curse;
+	bool fireFlash;
+	bool afraid;
 	int choice;//专爱系列
+	int lastSkill;
 	int heavyPoisoningCnt;
 
 	void calculatePoints();
@@ -60,8 +65,9 @@ private:
 	bool generateRandom(int probability, int base = 100);
 	int calculateFiveHits();
 	//等级变化,pos表示LevelChange的位置,amount表示变化量,可正可负
-	void levelChange(int pos, int amount);
+	void levelChange(int pos, int amount, bool information);
 	int calculateHeavyPoisoning();
+	State calculateEffectSpore();
 
 	Pokemon(int _id, int _level, char* _nickname = NULL, Gender _gender = Male, Nature _nature = Hardy, Item _item = EMPTY, int _happiness = 255);
 	void setEVs(int Life, int Attack, int Defense, int SpecialAttack, int SpecialDefense, int Speed);
@@ -79,5 +85,5 @@ private:
 	Pokemon(const Pokemon& pokemon);
 	void attack(Game* game, Team* rivalTeam, int skillPos, bool information = true);
 	void showAll();
-	void setState(State _state, bool information);
+	void setState(State _state, Pokemon* rival, bool information);
 };

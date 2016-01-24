@@ -23,18 +23,22 @@ int _tmain(int argc, _TCHAR* argv[])
 	teamA->set(6, 100, true, "Åç»ðÁú", Male, Adamant, ChoiceBand);
 	teamA->setEvs(0, 4, 252, 0, 0, 0, 252);
 	teamA->setIvs(0, 31, 31, 31, 31, 31, 31);
+	teamA->setAbility(0, ColorChange);
 
-	teamA->set(5, 100, true, "»ð¿ÖÁú", Male, Adamant, ChoiceBand);
+	teamA->set(5, 100, true, "»ð¿ÖÁú", Male, Adamant, BlackSludge);
 	teamA->setEvs(1, 4, 252, 0, 0, 0, 252);
 	teamA->setIvs(1, 31, 31, 31, 31, 31, 31);
+	teamA->setAbility(1, ShadowTag);
 
-	teamB->set(1, 100, true, "ÃîÍÜÖÖ×Ó", Female, Quiet, BlackSludge);
+	teamB->set(9, 100, true, "Ë®¼ý¹ê", Female, Quiet, BlackSludge);
 	teamB->setEvs(0, 0, 180, 0, 60, 60, 210);
 	teamB->setIvs(0, 0, 31, 0, 31, 31, 31);
+	teamB->setAbility(0, HugePower);
 
 	teamB->set(3, 100, true, "ÃîÍÜ»¨", Female, Quiet, BlackSludge);
 	teamB->setEvs(252, 0, 252, 0, 0, 0, 4);
 	teamB->setIvs(31, 31, 31, 31, 31, 31, 31);
+	teamB->setAbility(1, Static);
 
 	teamA->setSkill(0, 1);
 	teamA->setSkill(0, 2);
@@ -60,11 +64,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	/*teamA->move(0, teamB);
 	teamA->move(8, teamB);*/
 	//game->autoRun();
-	int round = 0;
 	while (true)
 	{
-		++round;
-		printf("round = %d\n", round);
+		printf("round = %d\n", game->getRound());
 		int moveA = 0, moveB = 0;
 		game->aiMoveMonteCarlo(moveA, moveB);
 		bool flag = game->Round(moveA, moveB, true);
