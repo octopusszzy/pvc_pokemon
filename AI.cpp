@@ -173,14 +173,21 @@ void Game::aiMoveMonteCarlo(int &move0, int &move1)
 		resultTotal1[i] = 0;
 		resultWin1[i] = 0;
 	}
+
 	for (int i = 0; i < legalMovesCnt0*legalMovesCnt1; ++i)
 	{
-		int s = i / legalMovesCnt1;
-		int r = i % legalMovesCnt1;
-		resultTotal0[r] += nodes[i]->totalGames;
-		resultTotal1[s] += nodes[i]->totalGames;
-		resultWin0[r] += nodes[i]->winGames;
-		resultWin1[s] += nodes[i]->totalGames - nodes[i]->winGames;
+		int s0 = i / legalMovesCnt1;
+		int s1 = i % legalMovesCnt1;
+		if (resultTotal0[s0] == 0 || nodes[i]->winGames*resultTotal0[s0] < nodes[i]->totalGames*resultWin0[s0])
+		{
+			resultTotal0[s0] = nodes[i]->totalGames;
+			resultWin0[s0] = nodes[i]->winGames;
+		}
+		if (resultTotal1[s0] == 0 || (nodes[i]->totalGames - nodes[i]->winGames)*resultTotal1[s0] < nodes[i]->totalGames*resultWin1[s0])
+		{
+			resultTotal1[s0] = nodes[i]->totalGames;
+			resultWin1[s0] = nodes[i]->totalGames - nodes[i]->winGames;
+		}
 	}
 	int sign0 = 0;
 	int sign1 = 0;
