@@ -28,8 +28,6 @@ Pokemon::~Pokemon()
 		if (skills[i] != NULL)
 			delete skills[i];
 	}
-	delete[]name;
-	delete[]nickname;
 }
 
 void Pokemon::calculateNature()
@@ -205,8 +203,6 @@ int Pokemon::calculateHeavyPoisoning()
 
 Pokemon::Pokemon(int _id, int _level, char* _nickname, Gender _gender, Nature _nature, Item _item, int _happiness)
 {
-	name = new char[PokemonNameLength];
-	nickname = new char[PokemonNameLength];
 	choice = -1;
 	id = _id;
 	id = id >= PokemonDataRange ? 0 : (id < 0 ? 0 : id);

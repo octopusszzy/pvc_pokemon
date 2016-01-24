@@ -18,8 +18,8 @@ class Pokemon{
 	friend class Team;
 	friend class Game;
 private:
-	char *nickname;
-	char *name;
+	char nickname[PokemonNameLength];
+	char name[PokemonNameLength];
 	int id;
 	Type type[2];
 	Gender gender;
