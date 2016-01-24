@@ -141,8 +141,9 @@ void Team::pokemonSwitch(int pos, bool information)
 {
 	if (information)
 	{
-		printf("%s(%s)被换下场了\n", pokemons[pos]->nickname, pokemons[pos]->name);
-		printf("%s(%s)上场了\n", pokemons[0]->nickname, pokemons[0]->name);
+		if (pokemons[0]->life > 0)
+			printf("%s(%s)被换下场了\n", pokemons[0]->nickname, pokemons[0]->name);
+		printf("%s(%s)上场了\n", pokemons[pos]->nickname, pokemons[pos]->name);
 	}
 
 	pokemons[0]->substitute = false;
