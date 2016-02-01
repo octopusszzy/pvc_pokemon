@@ -9,7 +9,7 @@
 Skill::Skill(int _skillId)
 {
 	skillId = _skillId;
-	skillId = skillId > SkillNameLength - 1 ? 0 : (skillId < 1 ? 0 : skillId);
+	skillId = skillId > SkillDataRange - 1 ? 0 : (skillId < 1 ? 0 : skillId);
 	strcpy(name, Data::SkillName[skillId]);
 	type = (Type)Data::SkillData[skillId][0];
 	category = (Category)Data::SkillData[skillId][1];
@@ -21,6 +21,8 @@ Skill::Skill(int _skillId)
 	critialHit = Data::SkillData[skillId][6];
 	priority = Data::SkillData[skillId][7];
 	touch = Data::SkillData[skillId][8];
+	voice = Data::SkillData[skillId][9];
+	protectMode = Data::SkillData[skillId][10];
 }
 
 void Skill::affect()
@@ -61,4 +63,5 @@ Skill::Skill(const Skill& skill)
 	range = skill.range;
 	hitTimes = skill.hitTimes;
 	touch = skill.touch;
+	voice = skill.voice;
 }

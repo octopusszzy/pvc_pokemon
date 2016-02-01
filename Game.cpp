@@ -20,6 +20,7 @@ int Game::getRound()
 
 bool Game::Round(int move0, int move1, bool information)
 {
+	Team *team = NULL;
 	++round;
 	int moves[2] = {move0, move1};
 	int priority0 = calculatePriority(move0, 0, information);
@@ -68,56 +69,106 @@ bool Game::Round(int move0, int move1, bool information)
 
 	if (round == 1)
 	{
-		if (teams[first]->pokemons[0]->life > 0 && teams[first]->pokemons[0]->ability == Intimidate)
+		Pokemon *p = teams[first]->pokemons[0];
+		if (p->life > 0)
 		{
-			teams[1 - first]->pokemons[0]->levelChange(1, -1, information);
-			if (information)
-				printf("%s(%s)威吓了对手\n", teams[first]->pokemons[0]->nickname, teams[first]->pokemons[0]->name);
+			switch (p->ability)
+			{
+			case Intimidate:
+				if (information)
+					printf("%s(%s)威吓了对手\n", p->nickname, p->name);
+				teams[1 - first]->pokemons[0]->levelChange(1, -1, teams[1 - first], information);
+				break;
+			case Drizzle:
+				if (weather != Rainy)
+				{
+					int rainTime = 5;
+					weather = Rainy;
+					weatherCnt = rainTime + 1;
+					if (information)
+						printf("%s(%s)引起了沙暴\n", p->nickname, p->name);
+				}
+				break;
+			case Sandstorm:
+				if (weather != Sandstorm)
+				{
+					int lastTime = 5;
+					weather = Sandstorm;
+					weatherCnt = lastTime;
+					if (information)
+						printf("%s(%s)引起了沙暴\n", p->nickname, p->name);
+				}
+				break;
+			default:;
+			}
 		}
-		if (teams[1 - first]->pokemons[0]->life > 0 && teams[1 - first]->pokemons[0]->ability == Intimidate)
+		p = teams[1 - first]->pokemons[0];
+		if (p->life > 0)
 		{
-			teams[first]->pokemons[0]->levelChange(1, -1, information);
-			if (information)
-				printf("%s(%s)威吓了对手\n", teams[1 - first]->pokemons[0]->nickname, teams[1 - first]->pokemons[0]->name);
+			switch (p->ability)
+			{
+			case Intimidate:
+				if (information)
+					printf("%s(%s)威吓了对手\n", p->nickname, p->name);
+				teams[first]->pokemons[0]->levelChange(1, -1, teams[first], information);
+				break;
+			case Drizzle:
+				if (weather != Rainy)
+				{
+					int rainTime = 5;
+					weather = Rainy;
+					weatherCnt = rainTime + 1;
+					if (information)
+						printf("%s(%s)引起了沙暴\n", p->nickname, p->name);
+				}
+				break;
+			case Drought:
+				if (weather != Shiny)
+				{
+					int rainTime = 5;
+					weather = Shiny;
+					weatherCnt = rainTime + 1;
+					if (information)
+						printf("%s(%s)引起了干旱\n", p->nickname, p->name);
+				}
+				break;
+			case Sandstorm:
+				if (weather != Sandstorm)
+				{
+					int lastTime = 5;
+					weather = Sandstorm;
+					weatherCnt = lastTime;
+					if (information)
+						printf("%s(%s)引起了沙暴\n", p->nickname, p->name);
+				}
+				break;
+			default:;
+			}
 		}
 	}
 
 	teams[first]->pokemons[0]->afraid = false;
+	teams[first]->pokemons[0]->protectMode = 0;
 	teams[1 - first]->pokemons[0]->afraid = false;
-
-	if (teams[first]->pokemons[0]->life > 0)
-	{
-		switch (teams[first]->pokemons[0]->ability)
-		{
-		case Drizzle:
-		{
-			int rainTime = 5;
-			weather = Rainy;
-			weatherCnt = rainTime + 1;
-			break;
-		}
-		default:;
-		}
-	}
-	if (teams[1 - first]->pokemons[0]->life > 0)
-	{
-		switch (teams[1 - first]->pokemons[0]->ability)
-		{
-		case Drizzle:
-		{
-			int rainTime = 5;
-			weather = Rainy;
-			weatherCnt = rainTime + 1;
-			break;
-		}
-		default:;
-		}
-	}
+	teams[1 - first]->pokemons[0]->protectMode = 0;
 
 	if (teams[first]->pokemons[0]->life > 0)
 		teams[first]->move(moves[first], teams[1 - first], this, information);
 	if (teams[1 - first]->pokemons[0]->life > 0)
 		teams[1 - first]->move(moves[1 - first], teams[first], this, information);
+
+	if (teams[first]->mist > 0)
+	{
+		--teams[first]->mist;
+		if (teams[first]->mist == 0 && information)
+			printf("%s的白雾消失了\n", teams[first]->name);
+	}
+	if (teams[1 - first]->mist > 0)
+	{
+		--teams[1 - first]->mist;
+		if (teams[1 - first]->mist == 0 && information)
+			printf("%s的白雾消失了\n", teams[1 - first]->name);
+	}
 
 	if (weatherCnt > 0)
 	{
@@ -134,10 +185,30 @@ bool Game::Round(int move0, int move1, bool information)
 	{
 		++pokemon->sleepCnt;
 	}
+	if (pokemon->disableSkill != -1)
+	{
+		--pokemon->disableSkillCnt;
+		if (pokemon->disableSkillCnt == 0)
+		{
+			pokemon->disableSkill = -1;
+			if (information)
+				printf("%s(%s)受到的封印消失了\n", pokemon->nickname, pokemon->name);
+		}
+	}
 	pokemon = teams[1 - first]->pokemons[0];
 	if (pokemon->state == Sleeping)
 	{
 		++pokemon->sleepCnt;
+	}
+	if (pokemon->disableSkill != -1)
+	{
+		--pokemon->disableSkillCnt;
+		if (pokemon->disableSkillCnt == 0)
+		{
+			pokemon->disableSkill = -1;
+			if (information)
+				printf("%s(%s)受到的封印消失了\n", pokemon->nickname, pokemon->name);
+		}
 	}
 
 	switch (weather)
@@ -155,6 +226,7 @@ bool Game::Round(int move0, int move1, bool information)
 		if (information)
 			printf("正在刮沙暴\n");
 		Pokemon* p = teams[first]->pokemons[0];
+		team = teams[first];
 		if (p->life > 0 && p->type[0] != Rock && p->type[1] != Rock
 			&& p->type[0] != Ground && p->type[1] != Ground
 			&& p->type[0] != Steel && p->type[1] != Steel
@@ -162,9 +234,10 @@ bool Game::Round(int move0, int move1, bool information)
 		{
 			if (information)
 				printf("沙暴对%s(%s)造成了伤害\n", p->nickname, p->name);
-			p->reduceLife((p->HitPoints[0] >> 4), information);
+			p->reduceLife((p->HitPoints[0] >> 4), team, information);
 		}
 		p = teams[1 - first]->pokemons[0];
+		team = teams[1 - first];
 		if (p->life > 0 && p->type[0] != Rock && p->type[1] != Rock
 			&& p->type[0] != Ground && p->type[1] != Ground
 			&& p->type[0] != Steel && p->type[1] != Steel 
@@ -172,7 +245,7 @@ bool Game::Round(int move0, int move1, bool information)
 		{
 			if (information)
 				printf("沙暴对%s(%s)造成了伤害\n", p->nickname, p->name);
-			p->reduceLife((p->HitPoints[0] >> 4), information);
+			p->reduceLife((p->HitPoints[0] >> 4), team, information);
 		}
 		break;
 	}
@@ -181,20 +254,22 @@ bool Game::Round(int move0, int move1, bool information)
 		if (information)
 			printf("正在刮冰雹\n");
 		Pokemon* p = teams[first]->pokemons[0];
+		team = teams[first];
 		if (p->life > 0 && p->type[0] != Ice && p->type[1] != Ice
 			&& p->ability != CloudNine)
 		{
 			if (information)
 				printf("冰雹对%s(%s)造成了伤害\n", p->nickname, p->name);
-			p->reduceLife((p->HitPoints[0] >> 4), information);
+			p->reduceLife((p->HitPoints[0] >> 4), team, information);
 		}
 		p = teams[1 - first]->pokemons[0];
+		team = teams[1 - first];
 		if (p->life > 0 && p->type[0] != Ice && p->type[1] != Ice
 			&& p->ability != CloudNine)
 		{
 			if (information)
 				printf("冰雹对%s(%s)造成了伤害\n", p->nickname, p->name);
-			p->reduceLife((p->HitPoints[0] >> 4), information);
+			p->reduceLife((p->HitPoints[0] >> 4), team, information);
 		}
 		break;
 	}
@@ -202,25 +277,35 @@ bool Game::Round(int move0, int move1, bool information)
 	}
 
 	pokemon = teams[first]->pokemons[0];
+	team = teams[first];
 	//状态
 	if (pokemon->life > 0)
 	{
+		if (pokemon->ability == ShedSkin && pokemon->state != NoState)
+		{
+			if (pokemon->generateRandom(30))
+			{
+				if (information)
+					printf("%s(%s)因为蜕皮治愈了自己的异常状态\n", pokemon->nickname, pokemon->name);
+				pokemon->state = NoState;
+			}
+		}
 		switch(pokemon->state)
 		{
 		case Burn:
 			if (information)
 				printf("%s(%s)因为烧伤损失了体力\n", pokemon->nickname, pokemon->name);
-			pokemon->reduceLife((pokemon->HitPoints[0] >> 3), information);
+			pokemon->reduceLife((pokemon->HitPoints[0] >> 3), team, information);
 			break;
 		case Poisoning:
 			if (information)
 				printf("%s(%s)因为中毒损失了体力\n", pokemon->nickname, pokemon->name);
-			pokemon->reduceLife((pokemon->HitPoints[0] >> 3), information);
+			pokemon->reduceLife((pokemon->HitPoints[0] >> 3), team, information);
 			break;
 		case HeavyPoisoning:
 			if (information)
 				printf("%s(%s)因为中剧毒损失了体力\n", pokemon->nickname, pokemon->name);
-			pokemon->reduceLife(pokemon->calculateHeavyPoisoning(), information);
+			pokemon->reduceLife(pokemon->calculateHeavyPoisoning(), team, information);
 			++pokemon->heavyPoisoningCnt;
 			break;
 		default:;
@@ -228,55 +313,85 @@ bool Game::Round(int move0, int move1, bool information)
 	}
 
 	pokemon = teams[1-first]->pokemons[0];
-
+	team = teams[1 - first];
 	if (pokemon->life > 0)
 	{
+		if (pokemon->ability == ShedSkin && pokemon->state != NoState)
+		{
+			if (pokemon->generateRandom(30))
+			{
+				if (information)
+					printf("%s(%s)因为蜕皮治愈了自己的异常状态\n", pokemon->nickname, pokemon->name);
+				pokemon->state = NoState;
+			}
+		}
 		switch (pokemon->state)
 		{
 		case Burn:
 			if (information)
 				printf("%s(%s)因为烧伤损失了体力\n", pokemon->nickname, pokemon->name);
-			pokemon->reduceLife((pokemon->HitPoints[0] >> 3), information);
+			pokemon->reduceLife((pokemon->HitPoints[0] >> 3), team, information);
 			break;
 		case Poisoning:
 			if (information)
 				printf("%s(%s)因为中毒损失了体力\n", pokemon->nickname, pokemon->name);
-			pokemon->reduceLife((pokemon->HitPoints[0] >> 3), information);
+			pokemon->reduceLife((pokemon->HitPoints[0] >> 3), team, information);
 			break;
 		case HeavyPoisoning:
 			if (information)
 				printf("%s(%s)因为中剧毒损失了体力\n", pokemon->nickname, pokemon->name);
-			pokemon->reduceLife(pokemon->calculateHeavyPoisoning(), information);
+			pokemon->reduceLife(pokemon->calculateHeavyPoisoning(), team, information);
 			++pokemon->heavyPoisoningCnt;
 			break;
 		default:;
 		}
 	}
 	//寄生种子
-	if (teams[first]->pokemons[0]->life > 0 && teams[1 - first]->pokemons[0]->life)
+	if (teams[first]->pokemons[0]->life > 0 && teams[1 - first]->pokemons[0]->life > 0)
 	{
 		if (teams[first]->pokemons[0]->seed)
 		{
 			if (information)
 				printf("%s(%s)被寄生种子吸取了体力\n", teams[first]->pokemons[0]->nickname, teams[first]->pokemons[0]->name);
-			teams[first]->pokemons[0]->reduceLife((teams[first]->pokemons[0]->HitPoints[0] >> 3), information);
-			if (teams[1 - first]->pokemons[0]->life < teams[1 - first]->pokemons[0]->HitPoints[0])
+			teams[first]->pokemons[0]->reduceLife((teams[first]->pokemons[0]->HitPoints[0] >> 3), teams[first], information);
+			if (teams[first]->pokemons[0]->ability != LiquidOoze)
 			{
-				teams[1 - first]->pokemons[0]->addLife((teams[first]->pokemons[0]->HitPoints[0] >> 3), information);
+				if (teams[1 - first]->pokemons[0]->life < teams[1 - first]->pokemons[0]->HitPoints[0])
+				{
+					teams[1 - first]->pokemons[0]->addLife((teams[first]->pokemons[0]->HitPoints[0] >> 3), information);
+					if (information)
+						printf("寄生种子回复了%s(%s)的体力\n", teams[1 - first]->pokemons[0]->nickname, teams[1 - first]->pokemons[0]->name);
+				}
+			}
+			else
+			{
 				if (information)
-					printf("寄生种子回复了%s(%s)的体力\n", teams[1 - first]->pokemons[0]->nickname, teams[1 - first]->pokemons[0]->name);
+					printf("%s(%s)吸收了毒液\n", teams[1 - first]->pokemons[0]->nickname, teams[1 - first]->pokemons[0]->name);
+				teams[1 - first]->pokemons[0]->reduceLife((teams[first]->pokemons[0]->HitPoints[0] >> 3), teams[1 - first], information);
 			}
 		}
+	}
+	if (teams[first]->pokemons[0]->life > 0 && teams[1 - first]->pokemons[0]->life > 0)
+	{
 		if (teams[1 - first]->pokemons[0]->seed)
 		{
 			if (information)
 				printf("%s(%s)被寄生种子吸取了体力\n", teams[1 - first]->pokemons[0]->nickname, teams[1 - first]->pokemons[0]->name);
-			teams[1 - first]->pokemons[0]->reduceLife((teams[1 - first]->pokemons[0]->HitPoints[0] >> 3), information);
-			if (teams[first]->pokemons[0]->life < teams[first]->pokemons[0]->HitPoints[0])
+			teams[1 - first]->pokemons[0]->reduceLife((teams[1 - first]->pokemons[0]->HitPoints[0] >> 3), teams[1 - first], information);
+			if (teams[1 - first]->pokemons[0]->ability != LiquidOoze)
 			{
-				teams[first]->pokemons[0]->addLife((teams[1 - first]->pokemons[0]->HitPoints[0] >> 3), information);
+				if (teams[first]->pokemons[0]->life < teams[first]->pokemons[0]->HitPoints[0])
+				{
+					teams[first]->pokemons[0]->addLife((teams[1 - first]->pokemons[0]->HitPoints[0] >> 3), information);
+					if (information)
+						printf("寄生种子回复了%s(%s)的体力\n", teams[first]->pokemons[0]->nickname, teams[first]->pokemons[0]->name);
+				}
+			}
+			else
+			{
 				if (information)
-					printf("寄生种子回复了%s(%s)的体力\n", teams[first]->pokemons[0]->nickname, teams[first]->pokemons[0]->name);
+					printf("%s(%s)吸收了毒液\n", teams[first]->pokemons[0]->nickname, teams[first]->pokemons[0]->name);
+				teams[first]->pokemons[0]->reduceLife((teams[1 - first]->pokemons[0]->HitPoints[0] >> 3), teams[first], information);
 			}
 		}
 	}
@@ -285,13 +400,13 @@ bool Game::Round(int move0, int move1, bool information)
 	{
 		if (information)
 			printf("%s(%s)因为诅咒受到了伤害\n", teams[first]->pokemons[0]->nickname, teams[first]->pokemons[0]->name);
-		teams[first]->pokemons[0]->reduceLife((teams[first]->pokemons[0]->HitPoints[0] >> 2), information);
+		teams[first]->pokemons[0]->reduceLife((teams[first]->pokemons[0]->HitPoints[0] >> 2), teams[first], information);
 	}
 	if (teams[1 - first]->pokemons[0]->life > 0 && teams[1 - first]->pokemons[0]->curse)
 	{
 		if (information)
 			printf("%s(%s)因为诅咒受到了伤害\n", teams[1 - first]->pokemons[0]->nickname, teams[1 - first]->pokemons[0]->name);
-		teams[1 - first]->pokemons[0]->reduceLife((teams[1 - first]->pokemons[0]->HitPoints[0] >> 2), information);
+		teams[1 - first]->pokemons[0]->reduceLife((teams[1 - first]->pokemons[0]->HitPoints[0] >> 2), teams[1 - first], information);
 	}
 	//束缚技能
 	if (teams[first]->pokemons[0]->life > 0)
@@ -305,7 +420,9 @@ bool Game::Round(int move0, int move1, bool information)
 			case BindingBand: hurt = teams[first]->pokemons[0]->HitPoints[0] >> 3; break;
 			default:;
 			}
-			teams[first]->pokemons[0]->reduceLife(hurt, information);
+			if (information)
+				printf("%s(%s)被束缚住了受到伤害\n", teams[first]->pokemons[0]->nickname, teams[first]->pokemons[0]->name);
+			teams[first]->pokemons[0]->reduceLife(hurt, teams[first], information);
 			++teams[first]->bind;
 			if (teams[first]->bind == bindTime)
 			{
@@ -314,6 +431,8 @@ bool Game::Round(int move0, int move1, bool information)
 			}
 			else if (teams[first]->bind > bindTime)
 				teams[first]->bind = 0;
+			if (teams[first]->bind == 0 && information)
+				printf("%s(%s)挣脱了束缚\n", teams[first]->pokemons[0]->nickname, teams[first]->pokemons[0]->name);
 		}
 	}
 
@@ -328,7 +447,9 @@ bool Game::Round(int move0, int move1, bool information)
 			case BindingBand: hurt = teams[1 - first]->pokemons[0]->HitPoints[0] >> 3; break;
 			default:;
 			}
-			teams[1 - first]->pokemons[0]->reduceLife(hurt, information);
+			if (information)
+				printf("%s(%s)被束缚住了受到伤害\n", teams[1 - first]->pokemons[0]->nickname, teams[1 - first]->pokemons[0]->name);
+			teams[1 - first]->pokemons[0]->reduceLife(hurt, teams[1 - first], information);
 			++teams[1 - first]->bind;
 			if (teams[1 - first]->bind == bindTime)
 			{
@@ -337,9 +458,12 @@ bool Game::Round(int move0, int move1, bool information)
 			}
 			else if (teams[1 - first]->bind > bindTime)
 				teams[1 - first]->bind = 0;
+			if (teams[1 - first]->bind == 0 && information)
+				printf("%s(%s)挣脱了束缚\n", teams[1 - first]->pokemons[0]->nickname, teams[1 - first]->pokemons[0]->name);
 		}
 	}
 	pokemon = teams[first]->pokemons[0];
+	team = teams[first];
 	if (pokemon->life > 0)
 	{
 		switch (pokemon->item)
@@ -356,7 +480,7 @@ bool Game::Round(int move0, int move1, bool information)
 			}
 			else
 			{
-				pokemon->reduceLife((pokemon->HitPoints[0] >> 4), false);
+				pokemon->reduceLife((pokemon->HitPoints[0] >> 4), team, false);
 				if (information)
 					printf("%s(%s)因为%s损失了体力\n", pokemon->nickname, pokemon->name, Data::ItemName[(int)pokemon->item]);
 			}
@@ -366,6 +490,7 @@ bool Game::Round(int move0, int move1, bool information)
 	}
 	
 	pokemon = teams[1 - first]->pokemons[0];
+	team = teams[1 - first];
 	if (pokemon->life > 0)
 	{
 		switch (pokemon->item)
@@ -382,7 +507,7 @@ bool Game::Round(int move0, int move1, bool information)
 			}
 			else
 			{
-				pokemon->reduceLife((pokemon->HitPoints[0] >> 4), false);
+				pokemon->reduceLife((pokemon->HitPoints[0] >> 4), team, false);
 				if (information)
 					printf("%s(%s)因为%s损失了体力\n", pokemon->nickname, pokemon->name, Data::ItemName[(int)pokemon->item]);
 			}
@@ -392,27 +517,45 @@ bool Game::Round(int move0, int move1, bool information)
 	}
 
 	pokemon = teams[first]->pokemons[0];
+	team = teams[first];
 	if (pokemon->life > 0)
 	{
 		switch (pokemon->ability)
 		{
 		case SpeedBoost:
 			if (information)
-				printf("%s(%s)加速了\n");
-			pokemon->levelChange(5, 1, information);
+				printf("%s(%s)加速了\n", pokemon->nickname, pokemon->name);
+			pokemon->levelChange(5, 1, team, information);
+			break;
+		case RainDish:
+			if (weather == Rainy)
+			{
+				if (information)
+					printf("%s(%s)因为接雨盘回复了体力\n", pokemon->nickname, pokemon->name);
+				pokemon->addLife((pokemon->HitPoints[0] >> 4), information);
+			}
 			break;
 		default:;
 		}
 	}
 	pokemon = teams[1 - first]->pokemons[0];
+	team = teams[1 - first];
 	if (pokemon->life > 0)
 	{
 		switch (pokemon->ability)
 		{
 		case SpeedBoost:
 			if (information)
-				printf("%s(%s)加速了\n");
-			pokemon->levelChange(5, 1, information);
+				printf("%s(%s)加速了\n", pokemon->nickname, pokemon->name);
+			pokemon->levelChange(5, 1, team, information);
+			break;
+		case RainDish:
+			if (weather == Rainy)
+			{
+				if (information)
+					printf("%s(%s)因为接雨盘回复了体力\n", pokemon->nickname, pokemon->name);
+				pokemon->addLife((pokemon->HitPoints[0] >> 4), information);
+			}
 			break;
 		default:;
 		}
@@ -433,7 +576,7 @@ bool Game::Round(int move0, int move1, bool information)
 		int t = teams[first]->chooseNextPokemon(teams[first]->alivePokemons + 1, true);
 		if (t > 0)
 		{
-			teams[first]->pokemonSwitch(t, teams[1 - first]->pokemons[0], information);
+			teams[first]->pokemonSwitch(t, teams[1 - first]->pokemons[0], this, information);
 			p = teams[first]->pokemons[t];
 			for (int j = t; j < teams[first]->alivePokemons; ++j)
 				teams[first]->pokemons[j] = teams[first]->pokemons[j + 1];
@@ -458,7 +601,7 @@ bool Game::Round(int move0, int move1, bool information)
 		int t = teams[1 - first]->chooseNextPokemon(teams[1 - first]->alivePokemons + 1, true);
 		if (t > 0)
 		{
-			teams[1 - first]->pokemonSwitch(t, teams[first]->pokemons[0], information);
+			teams[1 - first]->pokemonSwitch(t, teams[first]->pokemons[0], this, information);
 			p = teams[1 - first]->pokemons[t];
 			for (int j = t; j < teams[1 - first]->alivePokemons; ++j)
 				teams[1 - first]->pokemons[j] = teams[1 - first]->pokemons[j + 1];
@@ -490,9 +633,9 @@ int Game::calculatePriority(int move, int team, bool information)
 	case 5:
 	case 6:
 	case 7:
-		if (!p->skills[move - 7])
+		if (!p->skills[move - 4])
 			return -1;
-		priority = Data::SkillData[p->skills[move - 7]->skillId][7];
+		priority = Data::SkillData[p->skills[move - 4]->skillId][7];
 		break;
 	case 8:
 	case 9:

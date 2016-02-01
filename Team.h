@@ -7,6 +7,7 @@
 
 class Team{
 	friend class Game;
+	friend class Pokemon;
 private:
 	char name[TeamNameLength+1];
 	int chooseNextPokemon(int alive, bool randomGenerate);
@@ -17,6 +18,7 @@ private:
 	int spikes;
 	int toxicSpikes;
 	bool stickyWeb;
+	int mist;
 	Team* copy();
 public:
 	Pokemon* pokemons[6];
@@ -30,7 +32,7 @@ public:
 	void set(int _id, int _level, bool information = true, char* _nickname = NULL, Gender _gender = Male, Nature _nature = Hardy, Item _item = EMPTY, int _happiness = 255);
 	void reset(int pos, bool information);
 	void move(int s, Team* rival, Game* game, bool information = true);
-	void pokemonSwitch(int pos, Pokemon* rival, bool information = true);
+	void pokemonSwitch(int pos, Pokemon* rival, Game* game, bool information = true, bool ignore = false);
 	void setEvs(int pos, int Life, int Attack, int Defense, int SpecialAttack, int SpecialDefense, int Speed);
 	void setIvs(int pos, int Life, int Attack, int Defense, int SpecialAttack, int SpecialDefense, int Speed);
 	void setAbility(int pos, Ability _ability);

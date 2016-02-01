@@ -86,8 +86,19 @@ void Pokemon::setSkill(int skillId)
 
 void Pokemon::setAbility(Ability _ability)
 {
-	ability = _ability;
-	copiedAbility = _ability;
+	Ability tmp;
+	switch (_ability)
+	{
+	case ArenaTrap: tmp = ShadowTag; break;
+	case VitalSpirit: tmp = Insomnia; break;
+	case WhiteSmoke: tmp = ClearBody; break;
+	case PurePower: tmp = HugePower; break;
+	case ShellArmor: tmp = BattleArmor; break;
+	case AirLock: tmp = CloudNine; break;
+	default: tmp = _ability;
+	}
+	ability = tmp;
+	copiedAbility = tmp;
 }
 
 Pokemon* Pokemon::copy()
@@ -122,7 +133,7 @@ Pokemon* Pokemon::copy()
 	tmp->substitute = substitute;
 	tmp->state = state;
 	tmp->confused = confused;
-	tmp->charmed = confused;
+	tmp->charmed = charmed;
 	tmp->seed = seed;
 	tmp->curse = curse;
 	tmp->sleepCnt = sleepCnt;
@@ -130,6 +141,12 @@ Pokemon* Pokemon::copy()
 	tmp->afraid = afraid;
 	tmp->heavyPoisoningCnt = heavyPoisoningCnt;
 	tmp->lastSkill = lastSkill;
+	tmp->protectMode = protectMode;
+	tmp->protectTime = protectTime;
+	tmp->doubleRound = doubleRound;
+	tmp->mad = mad;
+	tmp->disableSkill = disableSkill;
+	tmp->disableSkillCnt = disableSkillCnt;
 	for (int i = 0; i < 4; ++i)
 	{
 		tmp->skills[i] = NULL;
@@ -177,13 +194,19 @@ Pokemon::Pokemon(const Pokemon& pokemon)
 	state = pokemon.state;
 	sleepCnt = pokemon.sleepCnt;
 	confused = pokemon.confused;
-	charmed = pokemon.confused;
+	charmed = pokemon.charmed;
 	seed = pokemon.seed;
 	curse = pokemon.curse;
 	fireFlash = pokemon.fireFlash;
 	heavyPoisoningCnt = pokemon.heavyPoisoningCnt;
 	afraid = pokemon.afraid;
 	lastSkill = pokemon.lastSkill;
+	protectMode = pokemon.protectMode;
+	protectTime = pokemon.protectTime;
+	doubleRound = pokemon.doubleRound;
+	mad = pokemon.mad;
+	disableSkill = pokemon.disableSkill;
+	disableSkillCnt = pokemon.disableSkillCnt;
 	for (int i = 0; i < 4; ++i)
 	{
 		skills[i] = NULL;
@@ -247,6 +270,12 @@ Pokemon::Pokemon(int _id, int _level, char* _nickname, Gender _gender, Nature _n
 	afraid = false;
 	heavyPoisoningCnt = -1;
 	lastSkill = -1;
+	protectMode = 0;
+	protectTime = 0;
+	doubleRound = 0;
+	mad = 0;
+	disableSkill = -1;
+	disableSkillCnt = 0;
 	for (int i = 0; i < 6; ++i)
 	{
 		EVs[i] = 0;
@@ -483,11 +512,24 @@ bool Pokemon::generateRandom(int probability, int base)
 
 void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information)
 {
+	/*if (information)
+		printf("skillName = %s\n",skills[skillPos]->name);*/
+	Team* team = game->teams[0];
+	if (team == rivalTeam)
+		team = game->teams[1];
+
 	Pokemon* rival = rivalTeam->pokemons[0];
 	if (skillPos < 0 || skillPos > 4 || !skills[skillPos])
 	{
 		if (information)
 			printf("技能不合法！\n");
+		return;
+	}
+
+	if (skillPos == disableSkill)
+	{
+		if (information)
+			printf("技能被束缚，不能攻击\n");
 		return;
 	}
 
@@ -503,6 +545,16 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 		bool awake = false;
 		switch (sleepCnt)
 		{
+		case 1:
+			if (ability == EarlyBird)
+			{
+				sleepCnt = 0;
+				state = NoState;
+				awake = true;
+				if (information)
+					printf("%s(%s)醒来了", nickname, name);
+			}
+			break;
 		case 4:
 			sleepCnt = 0;
 			state = NoState;
@@ -527,6 +579,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 		{
 			if (information)
 				printf("%s(%s)正在睡觉\n", nickname, name);
+			protectTime = 0;
 			return;
 		}
 	}
@@ -543,6 +596,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 		{
 			if (information)
 				printf("%s(%s)处于冰封状态中\n", nickname, name);
+			protectTime = 0;
 			return;
 		}
 	}
@@ -553,14 +607,16 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 		{
 			if (information)
 				printf("%s(%s)因为麻痹，无法动弹\n", nickname, name);
+			protectTime = 0;
 			return;
 		}
 	}
 
-	if (afraid)
+	if (afraid && ability != InnerFocus)
 	{
 		if (information)
 			printf("%s(%s)害怕了\n", nickname, name);
+		protectTime = 0;
 		return;
 	}
 
@@ -569,6 +625,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 	{
 		if (information)
 			printf("技能PP值已用完\n");
+		protectTime = 0;
 		return;
 	}
 
@@ -578,16 +635,29 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 		if (skill->category == Other)
 		if (information)
 			printf("%s(%s)装备了道具%s，不能使用变化类技能\n", nickname, name, Data::ItemName[(int)item]);
+		protectTime = 0;
 		return;
 		break;
 	default:;
+	}
+
+	if (ability == Truant && lastSkill != -1)
+	{
+		if (information)
+			printf("%s(%s)正在玩\n", nickname, name);
+		lastSkill = -1;
+		protectTime = 0;
+		return;
 	}
 
 	int i = 0;
 	int hurt = 0;
 	int totalHurt = 0;
 	int totalHitTimes = 1;
+	bool hit = false;
 
+	if (!skill->protectMode)
+		protectTime = 0;
 	bool stopConfused = false;
 	if (confused)
 	{
@@ -610,13 +680,22 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 		if (information)
 			printf("%s(%s)攻击了自己\n", nickname, name);
 		int tmp = HitPoints[1];
+		int tmpDefense = HitPoints[2];
 		if (ability == HugePower)
 			tmp = tmp << 1;
-		hurt = (level * 2 / 5 + 2) * calculateLevelChange(tmp, LevelChanges[1]) * 40 / calculateLevelChange(HitPoints[2], LevelChanges[2]) / 50 + 2;
+		else if (ability == Hustle)
+			tmp += (tmp >> 1);
+		else if (ability == Guts && state != NoState)
+			tmp += (tmp >> 1);
+		else if (ability == MarvelScale && state != NoState)
+			tmpDefense += (tmpDefense >> 1);
+		if (state == Burn && ability != Guts)
+			tmp = tmp >> 1;
+		hurt = (level * 2 / 5 + 2) * calculateLevelChange(tmp, LevelChanges[1]) * 40 / calculateLevelChange(tmpDefense, LevelChanges[2]) / 50 + 2;
 		int randomHurt = rand() % 39;
 		hurt = hurt * (217 + randomHurt) / 255;
 		hurt = min(life, hurt);
-		reduceLife(hurt, information);
+		reduceLife(hurt, team, information);
 		if (information)
 			printf("%s(%s)受到了%d点伤害\n", nickname, name, hurt);
 	}
@@ -627,8 +706,53 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 		--skill->pp;
 		lastSkill = skillPos;
 
+		switch (skill->skillId)
+		{//蓄力攻击飞空潜水挖地等
+		case 13:
+			if (!doubleRound)
+			{
+				if (information)
+					printf("%s(%s)在身边卷起了旋风\n", nickname, name);
+				doubleRound = 1;
+				return;
+			}
+			else
+				doubleRound = 0;
+			break;
+		case 19:
+			if (!doubleRound)
+			{
+				if (information)
+					printf("%s(%s)飞上了天空\n", nickname, name);
+				doubleRound = 2;
+				return;
+			}
+			else
+				doubleRound = 0;
+			break;
+		default:;
+		}
+
 		switch (rival->ability)
 		{
+		case Pressure:
+			if (skill->pp > 0)
+			{
+				--skill->pp;
+				if (information)
+					printf("%s(%s)释放了压力");
+			}
+		case Soundproof:
+			if (skill->voice)
+			{
+				if (information)
+				{
+					printf("%s(%s)使用了技能%s\n", nickname, name, skill->name);
+					printf("%s(%s)的防音阻止了攻击\n", rival->nickname, rival->name);
+				}
+				return;
+			}
+			break;
 		case VoltAbsorb:
 			if (skill->type == Electric)
 			{
@@ -673,7 +797,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 					printf("%s(%s)使用了技能%s\n", nickname, name, skill->name);
 					printf("%s(%s)的特攻上升一级\n", rival->nickname, rival->name);
 				}
-				rival->levelChange(3, 1, information);
+				rival->levelChange(3, 1, rivalTeam, information);
 				return;
 			}
 			break;
@@ -718,19 +842,55 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 		}
 		if (skill->hitTimes == 5)
 			totalHitTimes = calculateFiveHits();
+		else if (skill->hitTimes != 1)
+			totalHitTimes = skill->hitTimes;
 		for (; i < totalHitTimes && rival->life > 0; ++i)
 		{
+			int tmpSkillPower = skill->power;
+			if (life < HitPoints[0] / 3)
+			{
+				if (ability == Overgrow && skill->type == Grass)
+					tmpSkillPower += tmpSkillPower / 3;
+				else if (ability == Blaze && skill->type == Fire)
+					tmpSkillPower += tmpSkillPower / 3;
+				else if (ability == Torrent && skill->type == Water)
+					tmpSkillPower += tmpSkillPower / 3;
+				else if (ability == Swarm && skill->type == Bug)
+					tmpSkillPower += tmpSkillPower / 3;
+			}
+			if (skill->skillId == 57 && rival->doubleRound == 4)
+				tmpSkillPower = tmpSkillPower << 1;
 			if (skill->category == Physical)
 			{
 				int tmp = HitPoints[1];
 				if (ability == HugePower)
 					tmp = tmp << 1;
-				hurt = (level * 2 / 5 + 2) * calculateLevelChange(tmp, LevelChanges[1]) * skill->power / calculateLevelChange(rival->HitPoints[2], rival->LevelChanges[2]) / 50 + 2;
+				else if (ability == Hustle)
+					tmp += (tmp >> 1);
+				else if (ability == Guts && state != NoState)
+					tmp += (tmp >> 1);
+				if (state == Burn && ability != Guts)
+					tmp = tmp >> 1;
+
+				int tmpDefense = rival->HitPoints[2];
+				if (rival->ability == ThickFat && (skill->type == Ice || skill->type == Fire))
+					tmpDefense = tmpDefense << 1;
+				else if (rival->ability == MarvelScale && rival->state != NoState)
+					tmpDefense += (tmpDefense >> 1);
+				hurt = (level * 2 / 5 + 2) * calculateLevelChange(tmp, LevelChanges[1]) * tmpSkillPower / calculateLevelChange(tmpDefense, rival->LevelChanges[2]) / 50 + 2;
 			}	
 			else if (skill->category == Special)
-				hurt = (level * 2 / 5 + 2) * calculateLevelChange(HitPoints[3], LevelChanges[3]) * skill->power / calculateLevelChange(rival->HitPoints[4], rival->LevelChanges[4]) / 50 + 2;
-			if (skill->category != Other)
 			{
+				int tmpDefense = rival->HitPoints[4];
+				if (rival->ability == ThickFat && (skill->type == Ice || skill->type == Fire))
+					tmpDefense = tmpDefense << 1;
+				hurt = (level * 2 / 5 + 2) * calculateLevelChange(HitPoints[3], LevelChanges[3]) * tmpSkillPower / calculateLevelChange(tmpDefense, rival->LevelChanges[4]) / 50 + 2;
+			}
+				
+			if (true)
+			{
+				if (skill->category == Other)
+					hurt = 0;
 				if (skill->type == type[0] || skill->type == type[1])
 					hurt += (hurt >> 1);
 				int randomHurt = rand() % 39;
@@ -770,10 +930,51 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 				case Compoundeyes:
 					hitAccuracy = int(hitAccuracy*1.3);
 					break;
+				case Hustle:
+					if (skill->category == Physical)
+						hitAccuracy = int(hitAccuracy*0.8);
+					break;
 				default:;
 				}
 
-				bool hit = generateRandom(hitAccuracy);
+				if (skill->protectMode)
+				{
+					for (int i = 0; i < protectTime; ++i)
+						hitAccuracy = hitAccuracy >> 1;
+				}
+				switch (skill->skillId)
+				{
+				case 12:
+				case 32:
+					if (level >= rival->level)
+						hitAccuracy = 30 + level - rival->level;
+					else
+						hitAccuracy = 0;
+				default:;
+				}
+				hit = generateRandom(hitAccuracy);
+				if (skill->protectMode)
+				{
+					if (hit)
+						++protectTime;
+					else
+						protectTime = 0;
+				}
+				
+				if (rival->doubleRound > 1 && skill->skillId != 49 && skill->skillId != 57)
+				{
+					hit = false;
+				}
+
+				switch (game->weather)
+				{
+				case Hailstone:
+					if (skill->skillId == 59)
+						hit = true;
+					break;
+				defaut:;
+				}
+
 				switch (rival->item)
 				{
 				case AirBalloon:
@@ -786,6 +987,26 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 					break;
 				default:;
 				}
+
+				switch (rival->protectMode)
+				{
+				case 1:
+					if (information)
+						printf("%s(%s)守住了攻击\n", rival->nickname, rival->name);
+					return;
+				case 2:
+					if (information)
+						printf("%s(%s)守住了攻击\n%s(%s)攻击迅速下降\n", rival->nickname, rival->name, nickname, name);
+					levelChange(1, -2, team, information);
+					return;
+				case 3:
+					if (information)
+						printf("%s(%s)守住了攻击\n扎伤了%s(%s)\n", rival->nickname, rival->name, nickname, name);
+					reduceLife((HitPoints[0] >> 3), team, information);
+					return;
+				default:;
+				}
+
 				if (hurt != 0 && hit)
 				{
 					bool critical = generateRandom(calculateCriticalHit(skill->critialHit), 1000);
@@ -811,7 +1032,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 					case AirBalloon:
 						if (information)
 							printf("%s(%s)的%s爆炸了\n",rival->nickname,rival->name,Data::ItemName[(int)rival->item]);
-						rival->releaseItem();
+						rival->releaseItem(information);
 						break;
 					case BabiriBerry:
 						if (skill->type == Steel && t > 1)
@@ -819,7 +1040,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 							hurt = hurt >> 1;
 							if (information)
 								printf("%s(%s)吃掉了%s，伤害减半\n", rival->nickname, rival->name, Data::ItemName[(int)rival->item]);
-							rival->releaseItem();
+							rival->releaseItem(information);
 						}
 						break;
 					case CellBattery:
@@ -827,8 +1048,8 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 						{
 							if (information)
 								printf("%s(%s)使用了%s，攻击上升一级\n", rival->nickname, rival->name, Data::ItemName[(int)rival->item]);
-							rival->levelChange(1, 1, information);
-							rival->releaseItem();
+							rival->levelChange(1, 1, rivalTeam, information);
+							rival->releaseItem(information);
 						}
 						break;
 					case ChartiBerry:
@@ -837,7 +1058,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 							hurt = hurt >> 1;
 							if (information)
 								printf("%s(%s)吃掉了%s，伤害减半\n", rival->nickname, rival->name, Data::ItemName[(int)rival->item]);
-							rival->releaseItem();
+							rival->releaseItem(information);
 						}
 						break;
 					case ChilanBerry:
@@ -846,7 +1067,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 							hurt = hurt >> 1;
 							if (information)
 								printf("%s(%s)吃掉了%s，伤害减半\n", rival->nickname, rival->name, Data::ItemName[(int)rival->item]);
-							rival->releaseItem();
+							rival->releaseItem(information);
 						}
 						break;
 					case CobaBerry:
@@ -855,7 +1076,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 							hurt = hurt >> 1;
 							if (information)
 								printf("%s(%s)吃掉了%s，伤害减半\n", rival->nickname, rival->name, Data::ItemName[(int)rival->item]);
-							rival->releaseItem();
+							rival->releaseItem(information);
 						}
 						break;
 					case ColburBerry:
@@ -864,7 +1085,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 							hurt = hurt >> 1;
 							if (information)
 								printf("%s(%s)吃掉了%s，伤害减半\n", rival->nickname, rival->name, Data::ItemName[(int)rival->item]);
-							rival->releaseItem();
+							rival->releaseItem(information);
 						}
 						break;
 					default:;
@@ -888,7 +1109,7 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 						if (skill->type == Bug)
 						{
 							hurt *= 1.3;
-							releaseItem();
+							releaseItem(information);
 						}
 						break;
 					default:;
@@ -917,19 +1138,37 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 					default:;
 					}
 
-					rival->reduceLife(hurt, information);
+					switch (skill->skillId)
+					{
+					case 49: hurt = 20; break;
+					default:;
+					}
+
+					rival->reduceLife(hurt,rivalTeam, information);
 					totalHurt += hurt;
 					if (information)
 						printf("%s(%s)受到了%d点伤害\n", rival->nickname, rival->name, hurt);
 					if (skillPos == 4)
 					{
-						reduceLife((HitPoints[0] >> 2), information);
+						reduceLife((HitPoints[0] >> 2), team, information);
 						if (information)
 							printf("%s(%s)受到了拼命的反伤\n", nickname, name);
 					}
 					
 					switch (rival->ability)
 					{
+					case FlameBody:
+						if (skill->touch && state == NoState && ability != WaterVeil
+							&& type[0] != Fire && type[1] != Fire)
+						{
+							if (generateRandom(30))
+							{
+								if (information)
+									printf("%s(%s)受到了火焰身躯的影响\n", nickname, name);
+								setState(Burn, rival, team, information);
+							}
+						}
+						break;
 					case ColorChange:
 						if (skill->type != rival->type[0] && skill->type != rival->type[1])
 						{
@@ -948,23 +1187,47 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 							{
 								if (information)
 									printf("%s(%s)受到了孢子的影响\n", nickname, name);
-								setState(s, rival, information);
+								setState(s, rival, team, information);
 							}
 						}
 						break;
 					}
+					case PoisonPoint:
+						if (skill->touch && state == NoState && ability != Immunity
+							&& type[0] != Poison && type[1] != Poison
+							&& type[0] != Steel && type[1] != Steel)
+						{
+							if (generateRandom(30))
+							{
+								if (information)
+									printf("%s(%s)受到了毒刺的影响\n", nickname, name);
+								setState(Poisoning, rival, team, information);
+							}
+						}
+						break;
+					case CuteCharm:
+						if (skill->touch && !charmed && gender != rival->gender && gender != Neutral && rival->gender != Neutral)
+						{
+							if (generateRandom(30))
+							{
+								if (information)
+									printf("%s(%s)受到了魅惑身躯的影响\n", nickname, name);
+								setCharmed(information);
+							}
+						}
+						break;
 					case Static:
 						if (skill->touch)
 						{
 							bool beStatic = generateRandom(30);
 							if (beStatic)
-								setState(Paralysis, rival, information);
+								setState(Paralysis, rival, team, information);
 						}
 						break;
 					case RoughSkin:
 						if (skill->touch)
 						{
-							reduceLife(min(life, (HitPoints[0] >> 3)), information);
+							reduceLife(min(life, (HitPoints[0] >> 3)), team, information);
 							if (information)
 								printf("%s(%s)受到了鲨鱼皮的反伤\n", nickname, name);
 						}
@@ -978,38 +1241,218 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 						break;
 					}
 				}
-				else
+				else if (!hit)
 				{
 					//未命中，飞膝踢等技能有反伤
 					if (information && totalHitTimes == 1)
 						printf("技能%s没有命中\n", skill->name);
+					switch (skill->skillId)
+					{
+					case 26:
+						if (ability != RockHead)
+						{
+							if (information)
+								printf("%s(%s)踢到了地上\n", nickname, name);
+							reduceLife((HitPoints[0] >> 1), team, information);
+						}
+						break;
+					case 28:
+						rival->levelChange(6, -1, rivalTeam, information);
+						break;
+					default:;
+					}
 					break;
 				}
 			}
-			float t = 1.0;//天恩系数
-			if (ability == SereneGrace)
-				t = 1.3;
+		}
+		if (information && totalHitTimes > 1 && !stopConfused)
+		{
+			if (i > 0)
+			{
+				printf("击中了%d次\n", i);
+			}
+			else
+			{
+				printf("技能%s没有命中\n", skill->name);
+			}
+		}
+
+		float t = 1.0;//天恩系数
+		if (ability == SereneGrace)
+			t = 1.3;
+		if (hit)
+		{
 			if (rival->ability != ShieldDust)
 			{
 				//技能追加对对方影响
+				switch (skill->skillId)
+				{
+				case 7:
+					if (generateRandom(int(10 * t)))
+						rival->setState(Burn, this, rivalTeam, information);
+					break;
+				case 8:
+					if (generateRandom(int(10 * t)))
+						rival->setState(Frozen, this, rivalTeam, information);
+					break;
+				case 9:
+					if (generateRandom(int(10 * t)))
+						rival->setState(Paralysis, this, rivalTeam, information);
+					break;
+				case 18:
+					if (rival->doubleRound < 2)
+					{
+						int tt = rivalTeam->chooseNextPokemon(rivalTeam->alivePokemons, true);
+						if (tt != -1)
+							rivalTeam->pokemonSwitch(tt, this, game, information, true);
+					}
+					break;
+				case 20:
+				case 35:
+					if (rivalTeam->bind == 0)
+						++rivalTeam->bind;
+					break;
+				case 23:
+				case 27:
+				case 29:
+				case 44:
+					if (generateRandom(int(30 * t)))
+						rival->afraid = true;
+					break;
+				case 28:
+					if (information)
+						printf("%s(%s)的命中下降了\n", rival->nickname, rival->name);
+					rival->levelChange(6, -1, rivalTeam, information);
+					break;
+				case 34:
+					if (generateRandom(int(30 * t)))
+						rival->setState(Paralysis, this, rivalTeam, information);
+					break;
+				case 39:
+				case 43:
+					if (information)
+						printf("%s(%s)的防御下降了\n", rival->nickname, rival->name);
+					rival->levelChange(2, -1, rivalTeam, information);
+					break;
+				case 40:
+					if (generateRandom(int(30 * t)))
+						rival->setState(Poisoning, this, rivalTeam, information);
+					break;
+				case 41:
+					if (generateRandom(int(36 * t)))
+						rival->setState(Poisoning, this, rivalTeam, information);
+					break;
+				case 50:
+					if (rival->lastSkill != 4 && rival->lastSkill != -1 && rival->disableSkill != -1)
+					{
+						rival->disableSkill = rival->lastSkill;
+						if (generateRandom(50))
+							rival->disableSkillCnt = 5;
+						else
+							rival->disableSkillCnt = 4;
+						if (information)
+							printf("%s(%s)的技能%s被封印了\n", rival->nickname, rival->name, rival->skills[rival->lastSkill]->name);
+					}
+					else
+					{
+						if (information)
+							printf("封印失败了\n");
+					}
+					break;
+				case 51:
+					if (generateRandom(10 * t))
+					{
+						if (information)
+							printf("%s(%s)的特防下降了\n", rival->nickname, rival->name);
+						rival->levelChange(4, -1, rivalTeam, information);
+					}
+					break;
+				case 52:
+				case 53:
+					if (generateRandom(10 * t))
+					{
+						if (information)
+							printf("%s(%s)烧伤了\n", rival->nickname, rival->name);
+						rival->setState(Burn, rival, rivalTeam, information);
+					}
+					break;
+				case 58:
+				case 59:
+					if (generateRandom(10 * t))
+					{
+						if (information)
+							printf("%s(%s)被冰冻了\n", rival->nickname, rival->name);
+						rival->setState(Frozen, rival, rivalTeam, information);
+					}
+					break;
+				default:;
+				}
 			}
 
 			if (true)
 			{
 				//技能追加对己方影响
+				switch (skill->skillId)
+				{
+				case 14:
+					if (information)
+						printf("%s(%s)的攻击迅速提高\n", nickname, name);
+					levelChange(1, 2, team, information);
+					break;
+				case 36:
+					if (ability != RockHead)
+					{
+						if (information)
+							printf("%s(%s)受到了反弹伤害\n", nickname, name);
+						reduceLife((hurt >> 2), team, information);
+					}
+					break;
+				case 37:
+					++mad;
+					switch (mad)
+					{
+					case 3:
+						if (information)
+							printf("%s(%s)平静下来了\n", nickname, name);
+						mad = 0;
+						setConfused(information);
+						break;
+					case 2:
+						if (generateRandom(50))
+						{
+							if (information)
+								printf("%s(%s)平静下来了\n", nickname, name);
+							mad = 0;
+							setConfused(information);
+						}
+						break;
+					default:;
+					}
+					break;
+				case 38:
+					if (ability != RockHead)
+					{
+						if (information)
+							printf("%s(%s)受到了反弹伤害\n", nickname, name);
+						reduceLife((hurt / 3), team, information);
+					}
+					break;
+				case 54:
+					if (team->mist == 0)
+					{
+						team->mist = 5;
+						if (information)
+							printf("%s周围扬起了白雾\n", team->name);
+					}
+					else
+					{
+						if (information)
+							printf("白雾使用失败\n");
+					}
+					break;
+				default:;
+				}
 			}
-		}
-	}
-	
-	if (information && totalHitTimes > 1 && !stopConfused)
-	{
-		if (i > 0)
-		{
-			printf("击中了%d次\n", i);
-		}
-		else
-		{
-			printf("技能%s没有命中\n", skill->name);
 		}
 	}
 }
@@ -1023,7 +1466,7 @@ State Pokemon::calculateEffectSpore()
 	else return NoState;
 }
 
-void Pokemon::reduceLife(int amount, bool information)
+void Pokemon::reduceLife(int amount, Team* team, bool information)
 {
 	life -= min(amount, life);
 	switch (item)
@@ -1034,9 +1477,9 @@ void Pokemon::reduceLife(int amount, bool information)
 			addLife(HitPoints[0] >> 3, false);
 			if (information)
 				printf("%s(%s)使用了%s，恢复了%d点体力\n", nickname, name, Data::ItemName[(int)item], HitPoints[0] >> 3);
-			releaseItem();
+			releaseItem(information);
 			if (nature == Bold || nature == Calm || nature == Modest || nature == Timid)
-				confused = true;
+				setConfused(information);
 		}
 		break;
 	case Cherry12:
@@ -1045,9 +1488,9 @@ void Pokemon::reduceLife(int amount, bool information)
 			addLife(HitPoints[0] >> 3, false);
 			if (information)
 				printf("%s(%s)使用了%s，恢复了%d点体力\n", nickname, name, Data::ItemName[(int)item], HitPoints[0] >> 3);
-			releaseItem();
+			releaseItem(information);
 			if (nature == Adamant || nature == Careful || nature == Impish || nature == Jolly)
-				confused = true;
+				setConfused(information);
 		}
 		break;
 	case Cherry13:
@@ -1056,9 +1499,9 @@ void Pokemon::reduceLife(int amount, bool information)
 			addLife(HitPoints[0] >> 3, false);
 			if (information)
 				printf("%s(%s)使用了%s，恢复了%d点体力\n", nickname, name, Data::ItemName[(int)item], HitPoints[0] >> 3);
-			releaseItem();
+			releaseItem(information);
 			if (nature == Brave || nature == Quiet || nature == Relaxed || nature == Sassy)
-				confused = true;
+				setConfused(information);
 		}
 		break;
 	case AguavBerry:
@@ -1067,19 +1510,19 @@ void Pokemon::reduceLife(int amount, bool information)
 			addLife(HitPoints[0] >> 3, false);
 			if (information)
 				printf("%s(%s)使用了%s，恢复了%d点体力\n", nickname, name, Data::ItemName[(int)item], HitPoints[0] >> 3);
-			releaseItem();
+			releaseItem(information);
 			if (nature == Lax || nature == Naive || nature == Naughty || nature == Rash)
-				confused = true;
+				setConfused(information);
 		}
 		break;
 	case ApicotBerry:
 		if (life > 0 && life < (HitPoints[0] >> 2))
 		{
-			levelChange(4, 1, information);
-			confused = true;
+			levelChange(4, 1, team, information);
+			setConfused(information);
 			if (information)
 				printf("%s(%s)使用了%s，特防上升了一级\n", nickname, name, Data::ItemName[(int)item]);
-			releaseItem();
+			releaseItem(information);
 		}
 		break;
 	case BerryJuice:
@@ -1088,7 +1531,7 @@ void Pokemon::reduceLife(int amount, bool information)
 			if (information)
 				printf("%s(%s)使用了%s，恢复了%d点体力\n", nickname, name, Data::ItemName[(int)item], min(20, HitPoints[0] - life));
 			addLife(20, false);
-			releaseItem();
+			releaseItem(information);
 		}
 		break;
 	default:;
@@ -1096,12 +1539,30 @@ void Pokemon::reduceLife(int amount, bool information)
 	
 }
 
-void Pokemon::levelChange(int pos, int amount, bool information)
+void Pokemon::levelChange(int pos, int amount, Team* team, bool information)
 {
 	if (ability == ClearBody && amount < 0)
 	{
 		if (information)
 			printf("%s(%s)的净体特性阻止了能力下降\n", nickname, name);
+		return;
+	}
+	if (team->mist > 0 && pos < 0)
+	{
+		if (information)
+			printf("%s的白雾阻止了能力下降\n", team->name);
+		return;
+	}
+	if (ability == KeenEye && amount < 0 && pos == 6)
+	{
+		if (information)
+			printf("%s(%s)的锐利目光特性阻止了命中率下降\n", nickname, name);
+		return;
+	}
+	if (ability == HyperCutter && amount < 0 && pos == 1)
+	{
+		if (information)
+			printf("%s(%s)的怪力钳特性阻止了攻击下降\n", nickname, name);
 		return;
 	}
 	if (pos < 0 || pos >= Changes)
@@ -1110,7 +1571,7 @@ void Pokemon::levelChange(int pos, int amount, bool information)
 	LevelChanges[pos] = LevelChanges[pos] > 6 ? 6 : (LevelChanges[pos] < -6 ? -6 : LevelChanges[pos]);
 }
 
-void Pokemon::setState(State _state, Pokemon* rival, bool information)
+void Pokemon::setState(State _state, Pokemon* rival, Team* team, bool information)
 {
 	if (state != NoState)
 		return;
@@ -1118,7 +1579,7 @@ void Pokemon::setState(State _state, Pokemon* rival, bool information)
 	switch (_state)
 	{
 	case Burn:
-		if (type[0] != Fire && type[1] != Fire)
+		if (type[0] != Fire && type[1] != Fire && ability != WaterVeil)
 		{
 			if (information)
 				printf("%s(%s)烧伤了\n", nickname, name);
@@ -1133,16 +1594,6 @@ void Pokemon::setState(State _state, Pokemon* rival, bool information)
 		{
 			if (information)
 				printf("%s(%s)麻痹了\n", nickname, name);
-			switch (item)
-			{
-			case CheriBerry:
-				if (information)
-					printf("%s(%s)吃掉了%s，麻痹解除了\n", nickname, name, Data::ItemName[(int)item]);
-				releaseItem();
-				state = NoState;
-				break;
-			default:;
-			}
 		}
 		else
 		{
@@ -1173,39 +1624,21 @@ void Pokemon::setState(State _state, Pokemon* rival, bool information)
 		}
 		break;
 	case Sleeping:
-		if (ability == Insomnia)
+		if (ability != Insomnia)
 		{
-			state = NoState;
-			break;
-		}
-		if (information)
-			printf("%s(%s)睡着了\n", nickname, name);
-		switch (item)
-		{
-		case ChestoBerry:
 			if (information)
-				printf("%s(%s)吃掉了%s，睡眠解除了\n", nickname, name, Data::ItemName[(int)item]);
-			releaseItem();
+				printf("%s(%s)睡着了\n", nickname, name);
+		}
+		else
+		{
 			state = NoState;
-			break;
-		default:;
 		}
 		break;
 	case Frozen:
-		if (type[0] != Ice && type[1] != Ice)
+		if (type[0] != Ice && type[1] != Ice && ability != MagmaArmor)
 		{
 			if (information)
 				printf("%s(%s)被冰冻了\n", nickname, name);
-			switch (item)
-			{
-			case AspearBerry:
-				if (information)
-					printf("%s(%s)吃掉了%s，冰冻解除了\n", nickname, name, Data::ItemName[(int)item]);
-				releaseItem();
-				state = NoState;
-				break;
-			default:;
-			}
 		}
 		else
 		{
@@ -1215,7 +1648,37 @@ void Pokemon::setState(State _state, Pokemon* rival, bool information)
 	default:;
 	}
 	if (state != NoState && ability == Synchronize)
-		rival->setState(_state, this, information);
+		rival->setState(_state, this, team, information);
+	switch (item)
+	{
+	case AspearBerry:
+		if (state == Frozen)
+		{
+			if (information)
+				printf("%s(%s)吃掉了%s，冰冻解除了\n", nickname, name, Data::ItemName[(int)item]);
+			releaseItem(information);
+			state = NoState;
+		}
+		break;
+	case ChestoBerry:
+		if (state == Sleeping)
+		{
+			if (information)
+				printf("%s(%s)吃掉了%s，睡眠解除了\n", nickname, name, Data::ItemName[(int)item]);
+			releaseItem(information);
+			state = NoState;
+		}
+		break;
+	case CheriBerry:
+		if (state == Paralysis)
+		{
+			if (information)
+				printf("%s(%s)吃掉了%s，麻痹解除了\n", nickname, name, Data::ItemName[(int)item]);
+			releaseItem(information);
+			state = NoState;
+		}
+		break;
+	}
 }
 
 void Pokemon::addLife(int amount, bool information)
@@ -1254,5 +1717,45 @@ int Pokemon::calculateHurt(Type attackType, Type defendType1, Type defendType2, 
 		break;
 	default://2+2,1+4
 		return 1;
+	}
+}
+
+void Pokemon::setConfused(bool information)
+{
+	if (ability != OwnTempo && !confused)
+	{
+		if (information)
+			printf("%(%s)混乱了\n", nickname, name);
+		confused = true;
+	}
+	else if (confused)
+	{
+		if (information)
+			printf("%(%s)已经混乱了\n", nickname, name);
+	}
+	else
+	{
+		if (information)
+			printf("%(%s)的特性%s防止了被混乱\n", nickname, name, Data::AbilityName[(int)ability]);
+	}
+}
+
+void Pokemon::setCharmed(bool information)
+{
+	if (ability != Oblivious && !charmed)
+	{
+		if (information)
+			printf("%(%s)被魅惑了\n", nickname, name);
+		charmed = true;
+	}
+	else if (charmed)
+	{
+		if (information)
+			printf("%(%s)已经被魅惑了\n", nickname, name);
+	}
+	else
+	{
+		if (information)
+			printf("%(%s)的特性%s防止了被魅惑\n", nickname, name, Data::AbilityName[(int)ability]);
 	}
 }

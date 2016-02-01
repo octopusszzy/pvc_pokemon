@@ -31,7 +31,7 @@ void Pokemon::setItem(Item _item)
 	}
 }
 
-void Pokemon::releaseItem()
+void Pokemon::releaseItem(bool information)
 {
 	switch (item)
 	{

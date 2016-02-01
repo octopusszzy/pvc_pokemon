@@ -7,7 +7,7 @@ enum Ability{
 	SpeedBoost,//加速
 	BattleArmor,//战斗盔甲
 	Sturdy,//坚硬
-	Damp,//湿气,阻止自爆类技能
+	Damp,//湿气,阻止自爆类技能*
 	Limber,//柔软
 	SandVeil,//沙隐
 	Static,//静电
@@ -20,9 +20,9 @@ enum Ability{
 	ColorChange,//变色
 	Immunity,//免疫
 	FlashFire,//引火
-	ShieldDust,//鳞粉，不受对方技能追加效果影响
-	OwnTempo,//我行我素，不会混乱
-	SuctionCups,//吸盘，阻止吹吼龙尾特效
+	ShieldDust,//鳞粉，不受对方技能追加效果影响*
+	OwnTempo,//我行我素
+	SuctionCups,//吸盘，阻止吹吼龙尾特效*
 	Intimidate,//威吓
 	ShadowTag,//踩影
 	RoughSkin,//鲨鱼皮
@@ -38,5 +38,44 @@ enum Ability{
 	Chlorophyll,//叶绿素
 	Illuminate,//发光
 	Trace,//追踪
-	HugePower//大力士
+	HugePower,//大力士
+	PoisonPoint,//毒刺
+	InnerFocus,//精神力
+	MagmaArmor,//岩浆防护
+	WaterVeil,//水幕
+	MagnetPull,//磁力
+	Soundproof,//防音
+	RainDish,//接雨盘
+	SandStream,//起沙
+	Pressure,//压力
+	ThickFat,//厚脂肪
+	EarlyBird,//早起
+	FlameBody,//火焰身躯
+	RunAway,//逃走
+	KeenEye,//锐利目光
+	HyperCutter,//怪力钳
+	Pickup,//拾物
+	Truant,//懒惰
+	Hustle,//紧张
+	CuteCharm,//魅惑身躯
+	Plus,//正极
+	Minus,//负极
+	Forecast,//天气预报
+	StickyHold,//黏着，防止打落戏法等*
+	ShedSkin,//蜕皮
+	Guts,//根性
+	MarvelScale,//神奇鳞片
+	LiquidOoze,//毒液，被吸取体力时注意！*
+	Overgrow,//茂盛
+	Blaze,//猛火
+	Torrent,//激流
+	Swarm,//虫之预感
+	RockHead,//石脑*
+	Drought,//干旱
+	ArenaTrap,//同踩影
+	VitalSpirit,//同失眠
+	WhiteSmoke,//同净体
+	PurePower,//同大力士
+	ShellArmor,//同战斗盔甲
+	AirLock,//同无天气
 };

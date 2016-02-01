@@ -21,42 +21,42 @@ int _tmain(int argc, _TCHAR* argv[])
 	Team *teamA = new Team("TeamA");
 	Team *teamB = new Team("TeamB");
 	teamA->set(6, 100, true, "Åç»ğÁú", Male, Adamant, ChoiceBand);
-	teamA->setEvs(0, 4, 252, 0, 0, 0, 252);
+	teamA->setEvs(0, 252, 252, 0, 0, 0, 4);
 	teamA->setIvs(0, 31, 31, 31, 31, 31, 31);
-	teamA->setAbility(0, ColorChange);
+	teamA->setAbility(0, Blaze);
 
-	teamA->set(5, 100, true, "»ğ¿ÖÁú", Male, Adamant, BlackSludge);
-	teamA->setEvs(1, 4, 252, 0, 0, 0, 252);
+	teamA->set(5, 100, true, "»ğ¿ÖÁú", Male, Adamant, AirBalloon);
+	teamA->setEvs(1, 252, 252, 0, 0, 0, 4);
 	teamA->setIvs(1, 31, 31, 31, 31, 31, 31);
-	teamA->setAbility(1, ShadowTag);
+	teamA->setAbility(1, Blaze);
 
-	teamB->set(9, 100, true, "Ë®¼ı¹ê", Female, Quiet, BlackSludge);
-	teamB->setEvs(0, 0, 180, 0, 60, 60, 210);
-	teamB->setIvs(0, 0, 31, 0, 31, 31, 31);
-	teamB->setAbility(0, HugePower);
+	teamB->set(9, 100, true, "Ë®¼ı¹ê", Female, Quiet, ChoiceSpecs);
+	teamB->setEvs(0, 0, 252, 252, 0, 0, 4);
+	teamB->setIvs(0, 31, 31, 31, 31, 31, 31);
+	teamB->setAbility(0, Torrent);
 
 	teamB->set(3, 100, true, "ÃîÍÜ»¨", Female, Quiet, BlackSludge);
-	teamB->setEvs(252, 0, 252, 0, 0, 0, 4);
-	teamB->setIvs(31, 31, 31, 31, 31, 31, 31);
-	teamB->setAbility(1, Static);
+	teamB->setEvs(1, 252, 252, 0, 0, 0, 4);
+	teamB->setIvs(1, 31, 31, 31, 31, 31, 31);
+	teamB->setAbility(1, Overgrow);
 
-	teamA->setSkill(0, 1);
-	teamA->setSkill(0, 2);
-	teamA->setSkill(0, 3);
+	teamA->setSkill(0, 54);
+	teamA->setSkill(0, 19);
+	teamA->setSkill(0, 53);
 	teamA->setSkill(0, 4);
-	teamA->setSkill(1, 1);
+	teamA->setSkill(1, 38);
 	teamA->setSkill(1, 2);
 	teamA->setSkill(1, 3);
 	teamA->setSkill(1, 4);
 
-	teamB->setSkill(0, 1);
+	teamB->setSkill(0, 57);
 	teamB->setSkill(0, 2);
 	teamB->setSkill(0, 3);
-	teamB->setSkill(0, 4);
+	teamB->setSkill(0, 8);
 	teamB->setSkill(1, 1);
-	teamB->setSkill(1, 2);
-	teamB->setSkill(1, 3);
-	teamB->setSkill(1, 4);
+	teamB->setSkill(1, 22);
+	teamB->setSkill(1, 38);
+	teamB->setSkill(1, 9);
 
 	Game* game = new Game(teamA,teamB);
 	//game->Round(0, 0, true);

@@ -20,6 +20,8 @@ public:
 	int hitTimes;
 	int critialHit;
 	int touch;
+	int voice;
+	int protectMode;
 
 	Skill* copy();
 	Skill(const Skill& skill);

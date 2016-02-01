@@ -49,7 +49,13 @@ private:
 	bool afraid;
 	int choice;//专爱系列
 	int lastSkill;
+	int protectMode;//0无保护，1正常保护见切，2王盾，3刺盾
+	int protectTime;
+	int doubleRound;//0正常，1蓄力，2飞空，3挖地洞，4潜水
 	int heavyPoisoningCnt;
+	int mad;//逆鳞等
+	int disableSkill;//被束缚的技能
+	int disableSkillCnt;
 
 	void calculatePoints();
 	void calculateNature();
@@ -60,12 +66,12 @@ private:
 	int calculateLevelChange(int base, int change);
 	int calculateCriticalHit(int level);
 	int calculateAccuracy(int level, Pokemon* rival);
-	void reduceLife(int amount, bool information);
+	void reduceLife(int amount, Team* team, bool information);
 	void addLife(int amount, bool information);
 	bool generateRandom(int probability, int base = 100);
 	int calculateFiveHits();
 	//等级变化,pos表示LevelChange的位置,amount表示变化量,可正可负
-	void levelChange(int pos, int amount, bool information);
+	void levelChange(int pos, int amount, Team* team, bool information);
 	int calculateHeavyPoisoning();
 	State calculateEffectSpore();
 
@@ -76,7 +82,7 @@ private:
 	void setSkill(int skillId);
 
 	void setItem(Item _item);
-	void releaseItem();
+	void releaseItem(bool information);
 
 	~Pokemon();
 	void showHitPoints();
@@ -85,5 +91,7 @@ private:
 	Pokemon(const Pokemon& pokemon);
 	void attack(Game* game, Team* rivalTeam, int skillPos, bool information = true);
 	void showAll();
-	void setState(State _state, Pokemon* rival, bool information);
+	void setState(State _state, Pokemon* rival, Team* team, bool information);
+	void setConfused(bool information);
+	void setCharmed(bool information);
 };

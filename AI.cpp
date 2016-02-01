@@ -9,13 +9,30 @@
 
 int Team::generateLegalMove(int *moves, Team* rivalTeam)
 {
+	
 	int cnt = 0;
 	Pokemon *p = pokemons[0];
 	if (!p)
 		return 0;
-	if (p->choice != -1)
+	if (p->doubleRound != 0)
 	{
-		if (p->skills[p->choice] && p->skills[p->choice]->pp > 0)
+		if (p->lastSkill != -1 && p->skills[p->lastSkill] && p->skills[p->lastSkill]->pp > 0 && p->lastSkill != p->disableSkill)
+		{
+			moves[cnt++] = p->lastSkill;
+			return cnt;
+		}
+	}
+	else if (p->mad != 0)
+	{
+		if (p->lastSkill != -1 && p->skills[p->lastSkill] && p->skills[p->lastSkill]->pp > 0 && p->lastSkill != p->disableSkill)
+		{
+			moves[cnt++] = p->lastSkill;
+			return cnt;
+		}
+	}
+	else if (p->choice != -1 && p->choice != 4)
+	{
+		if (p->skills[p->choice] && p->skills[p->choice]->pp > 0 && p->choice != p->disableSkill)
 		{
 			moves[cnt++] = p->choice;
 		}	
@@ -24,7 +41,7 @@ int Team::generateLegalMove(int *moves, Team* rivalTeam)
 	{
 		for (int i = 0; i < 4; ++i)
 		{
-			if (p->skills[i] && p->skills[i]->pp > 0)
+			if (p->skills[i] && p->skills[i]->pp > 0 && i != p->disableSkill)
 			{
 				moves[cnt++] = i;
 			}	
@@ -33,7 +50,7 @@ int Team::generateLegalMove(int *moves, Team* rivalTeam)
 
 	if (false)//mega
 	{
-		if (p->choice != -1)
+		if (p->choice != -1 && p->choice != 4)
 		{
 			if (p->skills[p->choice] && p->skills[p->choice]->pp > 0)
 			{
@@ -44,15 +61,17 @@ int Team::generateLegalMove(int *moves, Team* rivalTeam)
 		{
 			for (int i = 0; i < 4; ++i)
 			{
-				if (p->skills[i] && p->skills[i]->pp > 0)
+				if (p->skills[i] && p->skills[i]->pp > 0 && i != p->disableSkill)
 				{
 					moves[cnt++] = i + 4;
 				}
 			}
 		}
 	}
-	if (bind == 0 && !(rivalTeam->pokemons[0] && rivalTeam->pokemons[0]->life > 0 && rivalTeam->pokemons[0]->ability == ShadowTag 
-		&& pokemons[0]->type[0] != Ghost && pokemons[0]->type[1] != Ghost))
+	if (bind == 0 &&  p->doubleRound == 0 && p->mad == 0 && !(rivalTeam->pokemons[0] && rivalTeam->pokemons[0]->life > 0 && rivalTeam->pokemons[0]->ability == ShadowTag 
+		&& pokemons[0]->type[0] != Ghost && pokemons[0]->type[1] != Ghost)
+		&& !(rivalTeam->pokemons[0] && rivalTeam->pokemons[0]->life>0 && rivalTeam->pokemons[0]->ability == MagnetPull 
+		&& (pokemons[0]->type[0] == Steel || pokemons[0]->type[1] == Steel)))
 	{
 		for (int i = 1; i < 6; ++i)
 		{
@@ -85,7 +104,7 @@ int Game::autoRun()
 		int moveA[MovesMax];
 		int moveB[MovesMax];
 		int round = 0;
-		while (true)
+		while (round < MaxRound)
 		{
 			++round;
 			
@@ -101,8 +120,10 @@ int Game::autoRun()
 		}
 		if (teams[0]->alivePokemons <= 0)
 			return 1;
-		else
+		else if (teams[1]->alivePokemons <= 0)
 			return 0;
+		else
+			return -1;
 	}
 	catch (int e)
 	{

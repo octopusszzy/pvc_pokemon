@@ -19,6 +19,7 @@ Team::Team(char *n)
 	toxicSpikes = 0;
 	stickyWeb = false;
 	bind = 0;
+	mist = 0;
 }
 
 Team* Team::copy()
@@ -31,6 +32,7 @@ Team* Team::copy()
 	tmp->toxicSpikes = toxicSpikes;
 	tmp->stickyWeb = stickyWeb;
 	tmp->bind = bind;
+	tmp->mist = mist;
 	for (int i = 0; i < 6; ++i)
 	{
 		if (pokemons[i])
@@ -127,7 +129,7 @@ void Team::move(int s, Team* rival, Game* game, bool information)
 	case 10:
 	case 11:
 	case 12:
-		pokemonSwitch(s - 7, rival->pokemons[0], information);
+		pokemonSwitch(s - 7, rival->pokemons[0], game, information);
 		break;
 	case 13:
 		//拼命
@@ -137,12 +139,19 @@ void Team::move(int s, Team* rival, Game* game, bool information)
 	}
 }
 
-void Team::pokemonSwitch(int pos, Pokemon* rival, bool information)
+void Team::pokemonSwitch(int pos, Pokemon* rival, Game* game, bool information, bool ignore)
 {
-	if (rival->ability == ShadowTag && pokemons[0]->type[0] != Ghost && pokemons[0]->type[1] != Ghost && pokemons[0]->life > 0)
+	if (ignore && rival->ability == ShadowTag && pokemons[0]->type[0] != Ghost && pokemons[0]->type[1] != Ghost && pokemons[0]->life > 0)
 	{
 		if (information)
 			printf("%s(%s)踩住了影子，不能交换\n", rival->nickname, rival->name);
+		return;
+	}
+
+	if (ignore && rival->ability == MagnetPull && (pokemons[0]->type[0] == Steel || pokemons[0]->type[1] == Steel) && pokemons[0]->life > 0)
+	{
+		if (information)
+			printf("%s(%s)被磁力吸住，不能交换\n", rival->nickname, rival->name);
 		return;
 	}
 
@@ -164,6 +173,10 @@ void Team::pokemonSwitch(int pos, Pokemon* rival, bool information)
 	pokemons[0]->fireFlash = false;
 	pokemons[0]->ability = pokemons[0]->copiedAbility;
 	pokemons[0]->lastSkill = -1;
+	pokemons[0]->doubleRound = 0;
+	pokemons[0]->mad = 0;
+	pokemons[0]->disableSkill = -1;
+	pokemons[0]->disableSkillCnt = 0;
 	if (pokemons[0]->ability == NaturalCure)
 	{
 		pokemons[0]->state = NoState;
@@ -181,18 +194,51 @@ void Team::pokemonSwitch(int pos, Pokemon* rival, bool information)
 	pokemons[0] = p;
 
 	bind = 0;
-
-	if (p->ability == Trace && rival)
+	Team* rivalTeam = game->teams[0];
+	if (rivalTeam == this)
+		rivalTeam = game->teams[1];
+	switch (p->ability)
 	{
+	case Trace:
 		if (information)
 			printf("%s(%s)复制了对手的特性%s\n", p->nickname, p->name, Data::AbilityName[(int)rival->ability]);
 		p->ability = rival->ability;
-	}
-	if (p->ability == Intimidate && rival)
-	{
+		break;
+	case Intimidate:
 		if (information)
 			printf("%s(%s)威吓了对手\n", p->nickname, p->name);
-		rival->levelChange(1, -1, information);
+		rival->levelChange(1, -1, rivalTeam, information);
+		break;
+	case SandStream:
+		if (game->weather != Sandstorm)
+		{
+			int lastTime = 5;
+			game->weather = Sandstorm;
+			game->weatherCnt = lastTime;
+			if (information)
+				printf("%s(%s)引起了沙暴\n", p->nickname, p->name);
+		}
+		break;
+	case Drought:
+		if (game->weather != Shiny)
+		{
+			int lastTime = 5;
+			game->weather = Shiny;
+			game->weatherCnt = lastTime;
+			if (information)
+				printf("%s(%s)引起了干旱\n", p->nickname, p->name);
+		}
+		break;
+	case Drizzle:
+		if (game->weather != Rainy)
+		{
+			int lastTime = 5;
+			game->weather = Rainy;
+			game->weatherCnt = lastTime;
+			if (information)
+				printf("%s(%s)引起了大雨\n", p->nickname, p->name);
+		}
+		break;
 	}
 	if (stealthRock && p->life > 0)
 	{
@@ -205,7 +251,7 @@ void Team::pokemonSwitch(int pos, Pokemon* rival, bool information)
 		}
 		if (information)
 			printf("Stealth Rock扎伤了%s(%s)\n",p->nickname,p->name);
-		p->reduceLife(hurt, information);
+		p->reduceLife(hurt, this, information);
 	}
 	if (spikes > 0 && p->life > 0 && p->type[0] != Flying && p->type[1] != Flying && p->ability != Levitate)
 	{
@@ -218,7 +264,7 @@ void Team::pokemonSwitch(int pos, Pokemon* rival, bool information)
 		}
 		if (information)
 			printf("Spikes扎伤了%s(%s)\n", p->nickname, p->name);
-		p->reduceLife(hurt, information);
+		p->reduceLife(hurt, this, information);
 	}
 	if (toxicSpikes > 0 && p->life > 0 && p->ability != Levitate
 		&& p->type[0] != Steel && p->type[1] != Steel
@@ -227,15 +273,15 @@ void Team::pokemonSwitch(int pos, Pokemon* rival, bool information)
 	{
 		switch (toxicSpikes)
 		{
-		case 1: p->setState(Poisoning, rival, information); break;
-		default: p->setState(HeavyPoisoning, rival, information); break;
+		case 1: p->setState(Poisoning, rival, this, information); break;
+		default: p->setState(HeavyPoisoning, rival, this, information); break;
 		}
 	}
 	if (stickyWeb && p->life > 0 && p->type[0] != Flying && p->type[1] != Flying  && p->ability != Levitate)
 	{
 		if (information)
 			printf("%s(%s)被黏网缠住了速度降低\n", p->nickname, p->name);
-		p->levelChange(5, -1, information);
+		p->levelChange(5, -1, this, information);
 	}
 }
 

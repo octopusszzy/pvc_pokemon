@@ -10,8 +10,8 @@ public:
 	static int PokemonData[PokemonDataRange][8];
 	static char PokemonName[PokemonDataRange][PokemonNameLength];
 
-	//Type,Category,Power,Accuracy,PP,HitTimes,CriticalHit,Priority
-	static int SkillData[SkillDataRange][9];
+	//Type,Category,Power,Accuracy,PP,HitTimes,CriticalHit,Priority,touch,voice,protectMode
+	static int SkillData[SkillDataRange][11];
 
 	static char SkillName[SkillDataRange][SkillNameLength];
 
