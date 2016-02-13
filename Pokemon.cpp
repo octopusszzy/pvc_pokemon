@@ -961,8 +961,9 @@ void Pokemon::attack(Game* game, Team* rivalTeam, int skillPos, bool information
 						protectTime = 0;
 				}
 				
-				if (rival->doubleRound > 1 && skill->skillId != 49 && skill->skillId != 57)
+				if (rival->doubleRound > 1)
 				{
+					if ((rival->doubleRound == 4 && skill->skillId == 57)){}
 					hit = false;
 				}
 
