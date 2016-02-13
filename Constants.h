@@ -5,7 +5,7 @@
 
 #define MovesMax 25
 
-#define PokemonDataRange 10
+#define PokemonDataRange 387
 #define PokemonNameLength 20
 
 #define SkillDataRange 60
